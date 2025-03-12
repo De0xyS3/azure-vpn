@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import useSWR from "swr"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -17,9 +16,9 @@ interface User {
 }
 
 interface RadiusServer {
-  id: string
+  id: number
   name: string
-  db_name: string
+  description: string | null
 }
 
 interface UserAccessManagementProps {
@@ -40,20 +39,11 @@ export function UserAccessManagement({
   onAccessUpdated,
 }: UserAccessManagementProps) {
   const { toast } = useToast()
-
-  const {
-    data: userAccess,
-    error,
-    mutate,
-  } = useSWR(open ? `/api/radius/allowed-users/${encodeURIComponent(user.userPrincipalName)}` : null, fetcher)
-
-  const [allowedServers, setAllowedServers] = useState<number[]>([])
+  const [allowedServers, setAllowedServers] = useState<number[]>(user.vpnServers || [])
 
   useEffect(() => {
-    if (userAccess) {
-      setAllowedServers(userAccess.radiusServers || [])
-    }
-  }, [userAccess])
+    setAllowedServers(user.vpnServers || [])
+  }, [user])
 
   const handleAccessToggle = async (serverId: number, checked: boolean) => {
     const updatedServers = checked ? [...allowedServers, serverId] : allowedServers.filter((id) => id !== serverId)
@@ -74,7 +64,7 @@ export function UserAccessManagement({
         throw new Error("Failed to update user access")
       }
 
-      await mutate()
+      setAllowedServers(updatedServers)
       onAccessUpdated()
 
       toast({
@@ -91,10 +81,6 @@ export function UserAccessManagement({
     }
   }
 
-  if (error) {
-    return <div>Error loading user access</div>
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -104,16 +90,19 @@ export function UserAccessManagement({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           {radiusServers.map((server) => {
-            const isEnabled = allowedServers.includes(Number(server.id))
+            const isEnabled = allowedServers.includes(server.id)
             return (
               <div key={server.id} className="flex items-center justify-between space-x-2">
                 <Label htmlFor={`server-${server.id}`} className="flex-grow">
-                  {server.name} ({server.db_name})
+                  {server.name}
+                  {server.description && (
+                    <span className="text-sm text-muted-foreground ml-2">({server.description})</span>
+                  )}
                 </Label>
                 <Switch
                   id={`server-${server.id}`}
                   checked={isEnabled}
-                  onCheckedChange={(checked) => handleAccessToggle(Number(server.id), checked)}
+                  onCheckedChange={(checked) => handleAccessToggle(server.id, checked)}
                 />
               </div>
             )

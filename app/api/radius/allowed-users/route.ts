@@ -10,7 +10,7 @@ interface AllowedUserRequest {
 interface RadiusServer {
   id: number
   name: string
-  db_name: string
+  description: string | null
 }
 
 export async function POST(request: Request) {
@@ -34,12 +34,15 @@ export async function POST(request: Request) {
 
     // Fetch server details
     const allServerIds = Array.from(new Set(currentServerIds.concat(radiusServers)))
-    const serverDetails = await query<RadiusServer>("SELECT id, name, db_name FROM radius_servers WHERE id IN (?)", [
-      allServerIds,
-    ])
+    const serverDetails = await query<RadiusServer>(
+      "SELECT id, name, description FROM radius_servers WHERE id IN (?)",
+      [allServerIds],
+    )
     console.log("Fetched server details:", serverDetails) // Debug log
 
-    const serverInfoMap = new Map(serverDetails.map((server) => [server.id, `${server.name} (${server.db_name})`]))
+    const serverInfoMap = new Map(
+      serverDetails.map((server) => [server.id, `${server.name} (${server.description || "No description"})`]),
+    )
 
     // First, remove all existing access
     await query("DELETE FROM user_radius_access WHERE user_principal_name = ?", [userPrincipalName])
@@ -104,17 +107,22 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const users = await query<{ user_principal_name: string; radius_server_id: number; name: string; db_name: string }>(
+    const users = await query<{
+      user_principal_name: string
+      radius_server_id: number
+      name: string
+      description: string | null
+    }>(
       `SELECT DISTINCT 
         ura.user_principal_name,
         ura.radius_server_id,
         rs.name,
-        rs.db_name
+        rs.description
       FROM user_radius_access ura
       LEFT JOIN radius_servers rs ON ura.radius_server_id = rs.id`,
     )
 
-    const userMap = new Map<string, { id: number; name: string | null; db_name: string | null }[]>()
+    const userMap = new Map<string, { id: number; name: string | null; description: string | null }[]>()
     users.forEach((user) => {
       if (!userMap.has(user.user_principal_name)) {
         userMap.set(user.user_principal_name, [])
@@ -122,7 +130,7 @@ export async function GET() {
       userMap.get(user.user_principal_name)!.push({
         id: user.radius_server_id,
         name: user.name || null,
-        db_name: user.db_name || null,
+        description: user.description || null,
       })
     })
 

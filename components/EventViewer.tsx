@@ -44,7 +44,7 @@ export function EventViewer() {
 
   useEffect(() => {
     fetchEvents()
-  }, []) // Removed fetchEvents from the dependency array
+  }, [])
 
   return (
     <div className="container mx-auto p-6">
@@ -80,6 +80,13 @@ export function EventViewer() {
                   <TableCell>{event.total_users}</TableCell>
                 </TableRow>
               ))}
+              {events.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    No hay eventos de sincronización registrados
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

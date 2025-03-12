@@ -5,8 +5,7 @@ import { getSession } from "@/lib/auth"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-// This endpoint now specifically handles Azure AD users
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Check authentication
     const session = await getSession()
@@ -14,14 +13,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("🔄 API: Fetching fresh users from users_azure table...")
+    // Obtener parámetros de paginación de la URL
+    const url = new URL(request.url)
+    const page = Number.parseInt(url.searchParams.get("page") || "1")
+    const limit = Number.parseInt(url.searchParams.get("limit") || "100")
+    const search = url.searchParams.get("search") || ""
+    const domainFilter = "@globalhitss.com" // Filtro de dominio fijo
 
-    const users = await query<{
-      id: string
-      displayName: string
-      userPrincipalName: string
-      vpnServers: string
-    }>(`
+    // Validar parámetros
+    const validPage = page > 0 ? page : 1
+    const validLimit = limit > 0 && limit <= 500 ? limit : 100
+    const offset = (validPage - 1) * validLimit
+
+    console.log(`🔄 API: Fetching users with pagination (page ${validPage}, limit ${validLimit})...`)
+
+    // Construir la consulta base con filtro de dominio
+    let sqlQuery = `
       SELECT DISTINCT
         ua.id, 
         ua.displayName, 
@@ -31,14 +38,63 @@ export async function GET() {
         users_azure ua
       LEFT JOIN 
         user_radius_access ura ON ua.userPrincipalName = ura.user_principal_name
+      WHERE 
+        ua.userPrincipalName LIKE ?
+    `
+
+    // Parámetros base con el filtro de dominio
+    const queryParams = []
+    queryParams.push(`%${domainFilter}`)
+
+    // Añadir condición de búsqueda si se proporciona
+    if (search) {
+      sqlQuery += `
+        AND (
+          ua.displayName LIKE ? OR 
+          ua.userPrincipalName LIKE ?
+        )
+      `
+      queryParams.push(`%${search}%`, `%${search}%`)
+    }
+
+    // Añadir agrupación y ordenación
+    sqlQuery += `
       GROUP BY 
         ua.id, ua.displayName, ua.userPrincipalName
       ORDER BY 
         ua.displayName ASC
-    `)
+    `
 
-    console.log("📊 API: Number of users fetched:", users.length)
-    console.log("📝 API: Raw user data:", JSON.stringify(users, null, 2))
+    // Añadir límites como parte de la consulta, no como parámetros
+    sqlQuery += ` LIMIT ${validLimit} OFFSET ${offset}`
+
+    // Ejecutar la consulta principal
+    const users = await query<{
+      id: string
+      displayName: string
+      userPrincipalName: string
+      vpnServers: string | null
+    }>(sqlQuery, queryParams)
+
+    // Obtener el total de usuarios para la paginación
+    let countQuery = `
+      SELECT COUNT(DISTINCT ua.id) as total 
+      FROM users_azure ua 
+      WHERE ua.userPrincipalName LIKE ?
+    `
+
+    const countParams = []
+    countParams.push(`%${domainFilter}`)
+
+    if (search) {
+      countQuery += ` AND (ua.displayName LIKE ? OR ua.userPrincipalName LIKE ?)`
+      countParams.push(`%${search}%`, `%${search}%`)
+    }
+
+    const totalResult = await query<{ total: number }>(countQuery, countParams)
+    const total = totalResult[0].total
+
+    console.log(`📊 API: Number of users fetched: ${users.length} (total: ${total})`)
 
     const formattedUsers = users.map((user) => ({
       ...user,
@@ -46,9 +102,18 @@ export async function GET() {
       hasVpnAccess: !!user.vpnServers,
     }))
 
-    console.log("📊 API: Number of formatted users:", formattedUsers.length)
-
-    return NextResponse.json({ users: formattedUsers }, { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json(
+      {
+        users: formattedUsers,
+        pagination: {
+          total,
+          page: validPage,
+          limit: validLimit,
+          totalPages: Math.ceil(total / validLimit),
+        },
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    )
   } catch (error) {
     console.error("❌ API: Error fetching users:", error)
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })
