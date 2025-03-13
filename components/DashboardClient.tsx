@@ -48,7 +48,7 @@ export function DashboardClient() {
   const { toast } = useToast()
 
   // Dominio fijo para filtrar
-  const domainFilter = "@globalhitss.com"
+  const domainFilter = "@yourdomain.com"
 
   // Debounce search term
   useEffect(() => {
@@ -88,7 +88,7 @@ export function DashboardClient() {
 
   useEffect(() => {
     if (usersData) {
-      console.log("Dashboard data updated")
+      console.log("Dashboard data updated:", usersData.users.length, "users")
     }
   }, [usersData])
 
@@ -309,11 +309,11 @@ export function DashboardClient() {
         {!isAdmin && (
           <Card>
             <CardHeader>
-              <CardTitle>Welcome</CardTitle>
+              <CardTitle>Bienvenido</CardTitle>
               <CardDescription>You are logged in as a regular user.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>You can view the dashboard statistics, but administrative actions are restricted.</p>
+              <p>Puede ver las estadísticas del panel, pero las acciones administrativas están restringidas.</p>
             </CardContent>
           </Card>
         )}
@@ -333,7 +333,7 @@ export function DashboardClient() {
                     <TableHead>Email</TableHead>
                     <TableHead>VPN Access</TableHead>
                     <TableHead>VPN Servers</TableHead>
-                    {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -343,19 +343,12 @@ export function DashboardClient() {
                       <TableCell>{user.userPrincipalName}</TableCell>
                       <TableCell>{user.hasVpnAccess ? "Yes" : "No"}</TableCell>
                       <TableCell>{user.vpnServers?.length || 0} servers</TableCell>
-                      {isAdmin && (
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleManageAccess(user)}
-                            className="gap-1"
-                          >
-                            <Settings className="h-4 w-4" />
-                            Manage Access
-                          </Button>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => handleManageAccess(user)} className="gap-1">
+                          <Settings className="h-4 w-4" />
+                          Manage Access
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

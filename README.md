@@ -116,3 +116,7 @@ networks:
 - Ensure your `.env.local` file is properly configured before starting the service.
 - The `de0xys/app_azure` image is pulled from Docker Hub.
 - Modify `JWT_SECRET` for authentication security.
+- Modify app/api/users/route.ts line 21 @yourdomain.
+- Modify components/DashboardClient.tsx line 51 @yourdomain.
+- Modify lib/azure.ts line 25 @yourdomain.
+

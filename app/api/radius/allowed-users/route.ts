@@ -73,18 +73,19 @@ export async function POST(request: Request) {
     // Log the action with server information
     let action: string
     let details: string
+    const userRole = session.role === "admin" ? "Admin" : "User"
     if (grantedServers.length > 0 && revokedServers.length > 0) {
       action = "update_vpn_access"
-      details = `Admin ${session.username} updated VPN access for user ${userPrincipalName}. Granted: ${grantedInfo}. Revoked: ${revokedInfo}`
+      details = `${userRole} ${session.username} updated VPN access for user ${userPrincipalName}. Granted: ${grantedInfo}. Revoked: ${revokedInfo}`
     } else if (grantedServers.length > 0) {
       action = "grant_vpn_access"
-      details = `Admin ${session.username} granted VPN access for user ${userPrincipalName}. Servers: ${grantedInfo}`
+      details = `${userRole} ${session.username} granted VPN access for user ${userPrincipalName}. Servers: ${grantedInfo}`
     } else if (revokedServers.length > 0) {
       action = "revoke_vpn_access"
-      details = `Admin ${session.username} revoked VPN access for user ${userPrincipalName}. Servers: ${revokedInfo}`
+      details = `${userRole} ${session.username} revoked VPN access for user ${userPrincipalName}. Servers: ${revokedInfo}`
     } else {
       action = "no_change_vpn_access"
-      details = `Admin ${session.username} made no changes to VPN access for user ${userPrincipalName}`
+      details = `${userRole} ${session.username} made no changes to VPN access for user ${userPrincipalName}`
     }
 
     await logAction(session.id, action, details)

@@ -10,11 +10,6 @@ CREATE TABLE IF NOT EXISTS radius_servers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    db_host VARCHAR(255) NOT NULL,
-    db_port INT NOT NULL,
-    db_name VARCHAR(255) NOT NULL,
-    db_user VARCHAR(255) NOT NULL,
-    db_password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

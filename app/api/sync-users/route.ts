@@ -64,13 +64,13 @@ export async function POST(request: Request) {
           const batch = azureUsers.slice(i, i + batchSize)
 
           if (batch.length > 0) {
-            // Preparar la consulta para inserción múltiple
+            // Preparar la consulta para inserción múltiple con REPLACE INTO
             const placeholders = batch.map(() => "(?, ?, ?)").join(", ")
             const values = batch.flatMap((user) => [user.id, user.displayName, user.userPrincipalName])
 
-            await query(`INSERT INTO users_azure (id, displayName, userPrincipalName) VALUES ${placeholders}`, values)
+            await query(`REPLACE INTO users_azure (id, displayName, userPrincipalName) VALUES ${placeholders}`, values)
 
-            console.log(`📝 Insertados ${i + batch.length} de ${azureUsers.length} usuarios`)
+            console.log(`📝 Insertados/Actualizados ${i + batch.length} de ${azureUsers.length} usuarios`)
           }
         }
       }

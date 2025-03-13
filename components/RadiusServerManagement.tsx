@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { Plus, Trash2, Info } from "lucide-react"
 import useSWR from "swr"
 
@@ -27,6 +28,8 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 export function RadiusServerManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [serverToDelete, setServerToDelete] = useState<RadiusServer | null>(null)
   const { toast } = useToast()
 
   const { data, error, mutate } = useSWR<{ servers: RadiusServer[] }>("/api/radius/servers", fetcher)
@@ -70,26 +73,32 @@ export function RadiusServerManagement() {
     }
   }
 
-  const handleDelete = async (serverId: number) => {
-    if (!confirm("Are you sure you want to delete this server? This will remove access for all users.")) {
-      return
-    }
+  const confirmDelete = (server: RadiusServer) => {
+    setServerToDelete(server)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!serverToDelete) return
 
     try {
-      const response = await fetch(`/api/radius/servers/${serverId}`, {
+      console.log(`Deleting server with ID: ${serverToDelete.id}`)
+      const response = await fetch(`/api/radius/servers/${serverToDelete.id}`, {
         method: "DELETE",
       })
 
       if (!response.ok) {
-        throw new Error("Failed to delete server")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to delete server")
       }
 
       await mutate()
       toast({
         title: "Success",
-        description: "RADIUS server deleted successfully",
+        description: `RADIUS server "${serverToDelete.name}" deleted successfully`,
       })
     } catch (error) {
+      console.error("Error deleting server:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete server",
@@ -166,16 +175,36 @@ export function RadiusServerManagement() {
                   <TableCell>{server.description || "-"}</TableCell>
                   <TableCell>{new Date(server.created_at).toLocaleString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(server.id)}>
+                    <Button variant="destructive" size="sm" onClick={() => confirmDelete(server)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
+              {(!data?.servers || data.servers.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    No hay servidores RADIUS registrados
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Diálogo de confirmación para eliminar */}
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="¿Eliminar servidor RADIUS?"
+        description={
+          serverToDelete
+            ? `Estás a punto de eliminar el servidor "${serverToDelete.name}" (ID: ${serverToDelete.id}). Esta acción eliminará el acceso VPN para todos los usuarios que tengan acceso a este servidor. Esta acción no se puede deshacer.`
+            : "¿Estás seguro de que deseas eliminar este servidor RADIUS?"
+        }
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

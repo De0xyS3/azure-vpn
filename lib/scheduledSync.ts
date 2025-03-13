@@ -51,13 +51,14 @@ async function syncUsers() {
           const batch = azureUsers.slice(i, i + batchSize)
 
           if (batch.length > 0) {
-            // Preparar la consulta para inserción múltiple
+            // Preparar la consulta para inserción múltiple con REPLACE INTO en lugar de INSERT INTO
+            // REPLACE INTO eliminará y volverá a insertar registros si hay duplicados
             const placeholders = batch.map(() => "(?, ?, ?)").join(", ")
             const values = batch.flatMap((user) => [user.id, user.displayName, user.userPrincipalName])
 
-            await query(`INSERT INTO users_azure (id, displayName, userPrincipalName) VALUES ${placeholders}`, values)
+            await query(`REPLACE INTO users_azure (id, displayName, userPrincipalName) VALUES ${placeholders}`, values)
 
-            console.log(`📝 Insertados ${i + batch.length} de ${azureUsers.length} usuarios`)
+            console.log(`📝 Insertados/Actualizados ${i + batch.length} de ${azureUsers.length} usuarios`)
           }
         }
       }
@@ -94,7 +95,13 @@ export function startScheduledSync() {
   // Ejecutar inmediatamente la primera sincronización
   syncUsers()
 
-  // Programar sincronizaciones periódicas cada 5 minutos
-  setInterval(syncUsers, 5 * 60 * 1000)
+//   // Programar sincronizaciones periódicas cada 5 minutos
+//   setInterval(syncUsers, 5 * 60 * 1000)
+// }
+
+
+
+  // programar sincronizaciones periódicas cada 3 hours
+  setInterval(syncUsers, 3 * 60 * 60 * 1000)
 }
 
