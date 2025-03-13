@@ -141,6 +141,12 @@ services:
     networks:
       - app-network
     user: root
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "7"
+        compress: "true"
 networks:
   app-network:
     external: true
@@ -241,6 +247,12 @@ services:
       - RADIUS_SECRET=\${RADIUS_SECRET}
       - PORT=\${PORT}
       - DEBUG=*
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "7"
+        compress: "true"
     networks:
       - app-network
 networks:
