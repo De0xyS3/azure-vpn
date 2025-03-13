@@ -156,11 +156,11 @@ AZURE_TENANT_ID=<random_tenant_id>
 
 # Configuración de la API de FortiGate
 FORTIGATE_API_TOKEN=<random_api_token>
-FORTIGATE_API_URL=https://10.172.0.1:9443/api/v2
+FORTIGATE_API_URL=https://192.168.1.1:443/api/v2
 
 # Detalles de conexión SSH de FortiGate
-FORTIGATE_IP=10.172.0.1
-FORTIGATE_SSH_PORT=1337
+FORTIGATE_IP=192.168.1.1
+FORTIGATE_SSH_PORT=22
 FORTIGATE_SSH_USERNAME=<random_username>
 FORTIGATE_SSH_PASSWORD=<random_password>
 
