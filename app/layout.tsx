@@ -5,6 +5,7 @@ import "./globals.css"
 import { Sidebar } from "@/components/sidebar"
 import { initializeSync } from "@/lib/syncOnStartup"
 import { getSession } from "@/lib/auth"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -38,8 +39,8 @@ export default async function RootLayout({
           // Layout para páginas públicas (login)
           <div className="min-h-screen bg-gray-100">{children}</div>
         )}
+        <Toaster />
       </body>
     </html>
   )
 }
-
