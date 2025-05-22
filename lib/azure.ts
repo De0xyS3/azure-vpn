@@ -22,7 +22,7 @@ export function getGraphClient() {
   return Client.initWithMiddleware({ authProvider })
 }
 
-export async function fetchAzureUsers(domainFilter = "@globalhitss.com"): Promise<AzureUser[]> {
+export async function fetchAzureUsers(domainFilter = "@yourdomain.com"): Promise<AzureUser[]> {
   const graphClient = getGraphClient()
   let allUsers: AzureUser[] = []
   let nextLink: string | null = null
